@@ -64,8 +64,82 @@ contract("Marketplace", ([deployer, seller, buyer]) => {
       await marketplace.createProduct("iPhone 13", "", {
         from: seller,
       }).should.be.rejected;
+    });
 
-      
+    it("lists products", async () => {
+      const product = await marketplace.products(productCount);
+      assert.equal(
+        product.id.toNumber(),
+        productCount.toNumber(),
+        "id is correct"
+      );
+      assert.equal(product.name, "iPhone 13", "name is correct");
+      assert.equal(product.price, "1000000000000000000", "price is correct");
+      assert.equal(product.owner, seller, "owner is correct");
+      assert.equal(product.purchased, false, "purchased is correct");
+    });
+
+    it("sells products", async () => {
+      //track the seller balance beore purchase
+      let oldSellerBalance;
+      oldSellerBalance = await web3.eth.getBalance(seller);
+      oldSellerBalance = new web3.utils.BN(oldSellerBalance);
+
+      //success: buyer makes purchase
+      const result = await marketplace.purchaseProduct(productCount, {
+        from: buyer,
+        value: web3.utils.toWei("1", "ether"),
+      });
+
+      //check logs
+      const event = result.logs[0].args;
+      assert.equal(
+        event.id.toNumber(),
+        productCount.toNumber(),
+        "id is correct"
+      );
+      assert.equal(event.name, "iPhone 13", "name is correct");
+      assert.equal(event.price, "1000000000000000000", "price is correct");
+      assert.equal(event.owner, buyer, "owner is correct");
+      assert.equal(event.purchased, true, "purchased is correct");
+
+      //check that seller received ether
+      let newSellerBalance;
+      newSellerBalance = await web3.eth.getBalance(seller);
+      newSellerBalance = new web3.utils.BN(newSellerBalance);
+
+      let price;
+      price = web3.utils.toWei("1", "ether");
+      price = new web3.utils.BN(price);
+
+      const expectedBalance = oldSellerBalance.add(price);
+
+      assert(newSellerBalance.toString(), expectedBalance.toString());
+
+      //fails to sell product
+      // product does not exist (product needs a valid id)
+      await marketplace.purchaseProduct(99, {
+        from: buyer,
+        value: web3.utils.toWei("1", "ether"),
+      }).should.be.rejected;
+
+      // buyer must have enough ether
+      await marketplace.purchaseProduct(productCount, {
+        from: buyer,
+        value: web3.utils.toWei(".5", "ether"),
+      }).should.be.rejected;
+
+      //deployer tries to buy own product
+      await marketplace.purchaseProduct(productCount, {
+        from: deployer,
+        value: web3.utils.toWei("1", "ether"),
+      }).should.be.rejected;
+
+      //buyer tries to buy again
+      await marketplace.purchaseProduct(productCount, {
+        from: buyer,
+        value: web3.utils.toWei("1", "ether"),
+      }).should.be.rejected;
     });
   });
 });
