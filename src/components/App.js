@@ -2,7 +2,8 @@ import React, { Component } from "react";
 import "./App.css";
 import Web3 from "web3";
 import Marketplace from "../abis/Marketplace.json";
-import Nav from "./Nav"
+import Nav from "./Nav";
+import Main from "./Main";
 
 class App extends Component {
   constructor(props) {
@@ -14,7 +15,10 @@ class App extends Component {
       productCount: 0,
       loading: true,
     };
+    this.createProduct = this.createProduct.bind(this);
   }
+
+
 
   async componentDidMount() {
     await this.loadWeb3();
@@ -47,26 +51,44 @@ class App extends Component {
 
     const networkId = await web3.eth.net.getId();
     const networkData = Marketplace.networks[networkId];
+
     if (networkData) {
       const abi = Marketplace.abi;
       const address = networkData.address;
       const marketplace = web3.eth.Contract(abi, address);
-      console.log(marketplace);
+      const productCount = await marketplace.methods.productCount().call();
+      console.log(productCount)
+      this.setState({ marketplace, loading: false });
     } else {
       console.log("Marketplace contract not deployed");
     }
   }
+
+  createProduct(name, price) {
+    this.setState({loading: true});
+    this.state.marketplace.methods.createProduct(name, price).send({from: this.state.account }).once('receipt', (receipt) => {
+      this.setState({loading: false})
+    })
+  };
+
   render() {
-    const { account } = this.state;
+    const { account, loading } = this.state;
+    const {createProduct} = this;
     return (
       <div>
-        <Nav account = {account} />
+        <Nav account={account} />
 
         {/* body */}
         <div className="container-fluid mt-5">
           <div className="row">
             <main role="main" className="col-lg-12 d-flex text-center">
-              <div className="content mr-auto ml-auto">Hello</div>
+              {loading ? (
+                <div id="loader" className="text-center">
+                  <p className="text-center">...Loading </p>
+                </div>
+              ) : (
+                <Main createProduct = {createProduct}/>
+              )}
             </main>
           </div>
         </div>
