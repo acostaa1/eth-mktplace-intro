@@ -16,6 +16,7 @@ class App extends Component {
       loading: true,
     };
     this.createProduct = this.createProduct.bind(this);
+    this.purchaseProduct = this.purchaseProduct.bind(this);
   }
 
   async componentDidMount() {
@@ -77,9 +78,19 @@ class App extends Component {
       });
   }
 
+  purchaseProduct(id, price) {
+    this.setState({ loading: true });
+    this.state.marketplace.methods
+      .purchaseProduct(id)
+      .send({ from: this.state.account, value: price })
+      .once("receipt", (receipt) => {
+        this.setState({ loading: false });
+      });
+  }
+
   render() {
     const { account, loading, products } = this.state;
-    const { createProduct } = this;
+    const { createProduct, purchaseProduct } = this;
     return (
       <div>
         <Nav account={account} />
@@ -93,7 +104,11 @@ class App extends Component {
                   <p className="text-center">...Loading </p>
                 </div>
               ) : (
-                <Main createProduct={createProduct} products={products} />
+                <Main
+                  createProduct={createProduct}
+                  purchaseProduct={purchaseProduct}
+                  products={products}
+                />
               )}
             </main>
           </div>

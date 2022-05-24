@@ -2,7 +2,7 @@ import React from "react";
 
 class Main extends React.Component {
   render() {
-    const { createProduct, products } = this.props;
+    const { createProduct, products, purchaseProduct } = this.props;
     return (
       <div className="content mr-auto ml-auto">
         <h1>Add Product</h1>
@@ -59,19 +59,34 @@ class Main extends React.Component {
           </thead>
           <tbody id="productList">
             {products.map((product, key) => {
-              console.log(product)
               return (
-                
-                  <tr key={key}>
-                    <th scope="row">{product.id.toString()}</th>
-                    <td>{product.name}</td>
-                    <td>{window.web3.utils.fromWei(product.price.toString(), "ether")} Eth</td>
-                    <td>{product.owner}</td>
-                    <td>
-                      <button className="buyButton">Buy</button>
-                    </td>
-                  </tr>
-                
+                <tr key={key}>
+                  <th scope="row">{product.id.toString()}</th>
+                  <td>{product.name}</td>
+                  <td>
+                    {window.web3.utils.fromWei(
+                      product.price.toString(),
+                      "ether"
+                    )}{" "}
+                    Eth
+                  </td>
+                  <td>{product.owner}</td>
+                  <td>
+                    {!product.purchased ? (
+                      <button
+                        name={product.id}
+                        value={product.price}
+                        onClick={(e) => {
+                          purchaseProduct(e.target.name, e.target.value);
+                        }}
+                      >
+                        Buy
+                      </button>
+                    ) : (
+                      <button disabled={product.purchased}>Purchased</button>
+                    )}
+                  </td>
+                </tr>
               );
             })}
           </tbody>
