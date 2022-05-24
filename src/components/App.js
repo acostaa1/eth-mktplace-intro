@@ -18,8 +18,6 @@ class App extends Component {
     this.createProduct = this.createProduct.bind(this);
   }
 
-
-
   async componentDidMount() {
     await this.loadWeb3();
     await this.loadBlockchainData();
@@ -57,23 +55,31 @@ class App extends Component {
       const address = networkData.address;
       const marketplace = web3.eth.Contract(abi, address);
       const productCount = await marketplace.methods.productCount().call();
-      console.log(productCount)
-      this.setState({ marketplace, loading: false });
+
+      for (let i = 1; i <= productCount; i++) {
+        const product = await marketplace.methods.products(i).call();
+        this.setState({ products: [...this.state.products, product] });
+      }
+
+      this.setState({ marketplace, loading: false, productCount });
     } else {
       console.log("Marketplace contract not deployed");
     }
   }
 
   createProduct(name, price) {
-    this.setState({loading: true});
-    this.state.marketplace.methods.createProduct(name, price).send({from: this.state.account }).once('receipt', (receipt) => {
-      this.setState({loading: false})
-    })
-  };
+    this.setState({ loading: true });
+    this.state.marketplace.methods
+      .createProduct(name, price)
+      .send({ from: this.state.account })
+      .once("receipt", (receipt) => {
+        this.setState({ loading: false });
+      });
+  }
 
   render() {
-    const { account, loading } = this.state;
-    const {createProduct} = this;
+    const { account, loading, products } = this.state;
+    const { createProduct } = this;
     return (
       <div>
         <Nav account={account} />
@@ -87,7 +93,7 @@ class App extends Component {
                   <p className="text-center">...Loading </p>
                 </div>
               ) : (
-                <Main createProduct = {createProduct}/>
+                <Main createProduct={createProduct} products={products} />
               )}
             </main>
           </div>
